@@ -2,7 +2,7 @@
   "name": "eigenbot",
   "version": "1.0.0",
   "description": "Bot for the EigenCraft Discord server.",
-  "main": "eigencraft.js",
+  "main": "eigenbot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
