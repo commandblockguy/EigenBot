@@ -49,7 +49,7 @@ client.on('message', msg => {
 				{
 					name: "Other commands: ",
 					value: "**" + config.prefix + "help:** Shows this help screen.\n" +
-					       "**" + config.prefix + "mcstatus:** Checks Mojang server status. (Currently unimplemented)"
+					       "**" + config.prefix + "mcstatus:** Checks Mojang server status."
 				}
 			],
 			url: config.url,
