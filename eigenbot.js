@@ -5,7 +5,6 @@ const urlRegex = /https:\/\/bugs.mojang.com\/browse\/(mc|mcapi|mcce|mcds|mcl|mcp
 const Discord = require('discord.js');
 const client = new Discord.Client();
 
-var request = require('request');
 JiraApi = require('jira').JiraApi;
 var jira = new JiraApi('https', config.host, config.port, config.user, config.password, '2', true);
 
