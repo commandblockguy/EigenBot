@@ -8,7 +8,7 @@ const Discord = require('discord.js');
 const client = new Discord.Client();
 
 JiraApi = require('jira').JiraApi;
-var jira = new JiraApi('https', config.host, config.port, config.user, config.password, '2', true);
+var jira = new JiraApi('https', config.host, 443, config.user, config.password, '2', true);
 
 client.on('ready', () => {
 	console.log(`Logged in as ${client.user.tag}!`);
@@ -96,8 +96,14 @@ client.on('message', msg => {
 //Send info about the bug in the form of an embed to the Discord channel
 function sendEmbed(channel, issue) {
 	descriptionString = '**Status:** ' + issue.fields.status.name
+	if(!issue.fields.resolution) {
+		//For unresolved issues
+		descriptionString += ' | **Votes:** ' + issue.fields.votes.votes;
 	} else {
+		//For resolved issues
+		descriptionString += ' | **Resolution:** ' + issue.fields.resolution.name;
 	}
+	//Generate the message
 	var msg = {embed: {
 		title: issue.key + ': ' + issue.fields.summary,
 		url: 'https://bugs.mojang.com/browse/' + issue.key,

@@ -1,0 +1,16 @@
+{
+    "token": "", //This is the bot token
+    "host": "bugs.mojang.com", //You shouldn't need to change this
+    "user": "", //This is your JIRA username
+    "password": "", //Password for the same account
+    "prefix": "!",
+    "url": "https://github.com/commandblockguy/EigenBot", //Linked to in !help
+    "colors": { //Colors for JIRA issue statuses
+        "Open": 4876165,
+        "Resolved": 1345836,
+        "In Progress": 16765777, //Unused, but we can leave that in there
+        "Reopened": 4876165,
+        "Closed": 1345836,
+        "Postponed": 16765777
+    }
+}
