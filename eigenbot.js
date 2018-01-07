@@ -107,6 +107,7 @@ function sendEmbed(channel, issue) {
 	}
 	//Generate the message
 	color = config.colors[issue.fields.status.name];
+	if(issue.fields.resolution && ["Invalid", "Duplicate", "Incomplete", "Cannot Reproduce"].includes(issue.fields.resolution.name)) {
 		color = config.colors["Invalid"];
 	} else if(issue.fields.resolution && ["Won't Fix", "Works As Intended"].includes(issue.fields.resolution.name)) {
 		color = config.colors["Working"];
