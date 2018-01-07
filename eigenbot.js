@@ -15,31 +15,11 @@ client.on('ready', () => {
 });
 
 client.on('message', msg => {
+	//We don't want our bot to react to other bots or itself
 	if(msg.author.bot) {
 		return;
 	}
-	matches = msg.content.match(regexPattern);
-	if(matches) {
-		matches.forEach(function(match) {
-			jira.findIssue(match.slice(1), function(error, issue) {
-				if(error) {
-					msg.channel.send("No issue was found.");
-				} else {
-					sendEmbed(msg.channel, issue)
-				}
-			});
-		});
-	}
-	if(urlRegex.test(msg.content)) {
-		const issueKey = msg.content.split('/')[4];
-		jira.findIssue(issueKey, function(error, issue) {
-			if(error) {
-				return;
-			} else {
-				sendEmbed(msg.channel, issue);
-			}
-		});
-	}
+	//help: Gives usage information
 	if(msg.content.startsWith(config.prefix + "help")) {
 		msg.channel.send({embed: {
 			title: "!help",
@@ -59,34 +39,70 @@ client.on('message', msg => {
 			}
 		}});
 	}
+	//mcstatus: Checks Mojang server status
 	if(msg.content.startsWith(config.prefix + "mcstatus")) {
+		//Request json object with the status of services
 		request('https://status.mojang.com/check', function (error, response, body) {
+			//We really should never get this. If you are getting this, please verify that Mojang still exists.
 			if(error) {
 				msg.channel.send("Unable to reach Mojang API for status check. Let's assume everything went wrong.");
 				return;
 			}
+			//Gives a list of objects with a single key-value pair consisting of the service name as the key and status as a color green, yellow, or red as the value
 			const statuses = JSON.parse(body);
 			if(statuses.every(function(service) {
+				//Get service name
 				name = Object.keys(service)[0];
 				if(service[name] == 'green') {
+					//Service is healthy
 					return true;
 				} else {
 					msg.channel.send("Service " + name + " has status " + service[name]);
 					return false;
 				}
 			})) {
+				//Run only 
 				msg.channel.send("All services are working normally.");
 			}
 		});
 	}
+	matches = []
+	//Check for prefixed issue keys (!MC-1)
+	piks = msg.content.match(regexPattern)
+	if(piks) matches = piks.map(function(prefixedIssueKey) {
+		return prefixedIssueKey.slice(1);
+	});
+	//Check for bugs.mojang.com urls
+	urls = msg.content.match(urlRegex)
+	if(urls) matches = matches.concat(urls.map(function(url) {
+		return url.split('/')[4];
+	}));
+	matches = matches.filter(function(elem, index, self){ return self.indexOf(elem) === index });
+	if(matches.length) {
+		//Get a list of issues by issue key
+		matches.forEach(function(issueKey, index) {
+			jira.findIssue(issueKey, function(error, issue) {
+				if(error) {
+					msg.channel.send("No issue was found for " + issueKey + ".");
+				} else {
+					//Send info about the bug in the form of an embed to the Discord channel
+					sendEmbed(msg.channel, issue);
+				}
+			});
+		});
+	}
 });
 
+//Send info about the bug in the form of an embed to the Discord channel
 function sendEmbed(channel, issue) {
+	descriptionString = '**Status:** ' + issue.fields.status.name
+	} else {
+	}
 	var msg = {embed: {
 		title: issue.key + ': ' + issue.fields.summary,
 		url: 'https://bugs.mojang.com/browse/' + issue.key,
-		description: '**Status:** ' + issue.fields.status.name + ' | **Votes:** ' + issue.fields.votes.votes,
-		color: 9441545,
+		description: descriptionString,
+		color: config.colors[issue.fields.status.name],
 		timestamp: new Date(Date.parse(issue.fields.created)),
 		footer: {
 			text: "Created"
@@ -95,4 +111,5 @@ function sendEmbed(channel, issue) {
 	channel.send(msg);
 };
 
+//Login with token
 client.login(config.token);
