@@ -12,6 +12,8 @@ var jira = new JiraApi('https', config.host, 443, config.user, config.password, 
 
 client.on('ready', () => {
 	console.log(`Logged in as ${client.user.tag}!`);
+	//Set the presence for the bot (Listening to !help)
+	client.user.setPresence({ status: 'online', game: { name: config.prefix + "help", type: 2} });
 });
 
 client.on('message', msg => {
@@ -104,11 +106,16 @@ function sendEmbed(channel, issue) {
 		descriptionString += ' | **Resolution:** ' + issue.fields.resolution.name;
 	}
 	//Generate the message
+	color = config.colors[issue.fields.status.name];
+		color = config.colors["Invalid"];
+	} else if(issue.fields.resolution && ["Won't Fix", "Works As Intended"].includes(issue.fields.resolution.name)) {
+		color = config.colors["Working"];
+	}
 	var msg = {embed: {
 		title: issue.key + ': ' + issue.fields.summary,
 		url: 'https://bugs.mojang.com/browse/' + issue.key,
 		description: descriptionString,
-		color: config.colors[issue.fields.status.name],
+		color: color,
 		timestamp: new Date(Date.parse(issue.fields.created)),
 		footer: {
 			text: "Created"

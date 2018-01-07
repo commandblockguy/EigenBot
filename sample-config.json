@@ -11,6 +11,8 @@
         "In Progress": 16765777, //Unused, but we can leave that in there
         "Reopened": 4876165,
         "Closed": 1345836,
-        "Postponed": 16765777
+        "Postponed": 16765777,
+        "Invalid": 9441545,
+        "Working": 16777215
     }
 }
