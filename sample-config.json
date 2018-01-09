@@ -3,8 +3,9 @@
     "host": "bugs.mojang.com", //You shouldn't need to change this
     "user": "", //This is your JIRA username
     "password": "", //Password for the same account
-    "prefix": "!",
+    "prefix": "!", //Prefix for bot commands
     "url": "https://github.com/commandblockguy/EigenBot", //Linked to in !help
+    "name": "EigenBot", //Bot name listed in !help
     "colors": { //Colors for JIRA issue statuses
         "Open": 4876165,
         "Resolved": 1345836,
@@ -12,7 +13,7 @@
         "Reopened": 4876165,
         "Closed": 1345836,
         "Postponed": 16765777,
-        "Invalid": 9441545,
-        "Working": 16777215
+        "Invalid": 9441545, //For Invalid, Duplicate, Incomplete, and Cannot Reproduce resolutions
+        "Working": 16777215 //For Won't Fix and Works as Intended resolutions
     }
 }

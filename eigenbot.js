@@ -1,6 +1,6 @@
 const config = require('./config.json');
 const regexPattern = /!(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}/gi;
-const urlRegex = /https:\/\/bugs.mojang.com\/browse\/(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}/gi;
+const urlRegex = /https?:\/\/bugs.mojang.com\/browse\/(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}/gi;
 
 const request = require('request');
 
@@ -37,7 +37,7 @@ client.on('message', msg => {
 			url: config.url,
 			color: 9441545,
 			footer: {
-				text: "EigenBot"
+				text: config.name
 			}
 		}});
 	}
@@ -106,12 +106,15 @@ function sendEmbed(channel, issue) {
 		descriptionString += ' | **Resolution:** ' + issue.fields.resolution.name;
 	}
 	//Generate the message
+	//Pick a color based on the status
 	color = config.colors[issue.fields.status.name];
+	//Additional colors for different resolutions
 	if(issue.fields.resolution && ["Invalid", "Duplicate", "Incomplete", "Cannot Reproduce"].includes(issue.fields.resolution.name)) {
 		color = config.colors["Invalid"];
 	} else if(issue.fields.resolution && ["Won't Fix", "Works As Intended"].includes(issue.fields.resolution.name)) {
 		color = config.colors["Working"];
 	}
+	//Create the embed
 	var msg = {embed: {
 		title: issue.key + ': ' + issue.fields.summary,
 		url: 'https://bugs.mojang.com/browse/' + issue.key,
