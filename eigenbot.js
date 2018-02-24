@@ -26,7 +26,7 @@ client.on('message', msg => {
 		msg.channel.send({embed: {
 			title: "!help",
 			description: "I listen for Minecraft bug report links or " + config.prefix + "PROJECT-NUMBER\n" +
-						 "For example, saying https://bugs.mojang.com/browse/MC-81098 or !MC-81098 will give quick info on those bugs",
+						 "For example, saying https://bugs.mojang.com/browse/MC-81098 or " + config.prefix + "MC-81098 will give quick info on those bugs",
 			fields: [
 				{
 					name: "Other commands: ",
