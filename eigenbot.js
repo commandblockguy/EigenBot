@@ -96,8 +96,12 @@ client.on('message', msg => {
 				//Send info about the bug in the form of an embed to the Discord channel
 				sendEmbed(msg.channel, issue);
 			}).catch(function(error) {
-				console.log(issueKey + ': ' + error);
-				msg.channel.send("No issue was found for " + issueKey + ".");
+				if(error && error.error && error.error.errorMessages && error.error.errorMessages.includes('Issue Does Not Exist')) {
+					msg.channel.send("No issue was found for " + issueKey + ".");
+				} else {
+					msg.channel.send("An unknown error has occurred.");
+					console.log(error);
+				}
 			});
 		});
 	}
