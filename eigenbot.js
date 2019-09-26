@@ -8,8 +8,16 @@ const request = require('request');
 const Discord = require('discord.js');
 const client = new Discord.Client();
 
-JiraApi = require('jira').JiraApi;
-var jira = new JiraApi('https', config.host, 443, config.user, config.password, '2', true);
+JiraApi = require('jira-client');
+var jira = new JiraApi({
+	protocol: 'https',
+	host: config.host,
+	port: 443,
+	username: config.user,
+	password: config.password,
+	apiVersion: '2',
+	strictSSL: true
+});
 
 client.on('ready', () => {
 	console.log(`Logged in as ${client.user.tag}!`);
@@ -84,13 +92,12 @@ client.on('message', msg => {
 	if(matches.length) {
 		//Get a list of issues by issue key
 		matches.forEach(function(issueKey, index) {
-			jira.findIssue(issueKey, function(error, issue) {
-				if(error) {
-					msg.channel.send("No issue was found for " + issueKey + ".");
-				} else {
-					//Send info about the bug in the form of an embed to the Discord channel
-					sendEmbed(msg.channel, issue);
-				}
+			jira.findIssue(issueKey).then(function(issue) {
+				//Send info about the bug in the form of an embed to the Discord channel
+				sendEmbed(msg.channel, issue);
+			}).catch(function(error) {
+				console.log(issueKey + ': ' + error);
+				msg.channel.send("No issue was found for " + issueKey + ".");
 			});
 		});
 	}
