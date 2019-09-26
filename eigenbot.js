@@ -1,5 +1,6 @@
 const config = require('./config.json');
-const regexPattern = /!(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}/gi;
+const escaped_prefix = config.prefix.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+const regexPattern = new RegExp(escaped_prefix + '(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}', 'gi');
 const urlRegex = /https?:\/\/bugs.mojang.com\/browse\/(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}/gi;
 
 const request = require('request');
@@ -24,7 +25,7 @@ client.on('message', msg => {
 	//help: Gives usage information
 	if(msg.content.startsWith(config.prefix + "help")) {
 		msg.channel.send({embed: {
-			title: "!help",
+			title: config.prefix + "help",
 			description: "I listen for Minecraft bug report links or " + config.prefix + "PROJECT-NUMBER\n" +
 						 "For example, saying https://bugs.mojang.com/browse/MC-81098 or " + config.prefix + "MC-81098 will give quick info on those bugs",
 			fields: [
@@ -63,7 +64,7 @@ client.on('message', msg => {
 					return false;
 				}
 			})) {
-				//Run only 
+				//Run only
 				msg.channel.send("All services are working normally.");
 			}
 		});
@@ -72,7 +73,7 @@ client.on('message', msg => {
 	//Check for prefixed issue keys (!MC-1)
 	piks = msg.content.match(regexPattern)
 	if(piks) matches = piks.map(function(prefixedIssueKey) {
-		return prefixedIssueKey.slice(1);
+		return prefixedIssueKey.slice(config.prefix.length);
 	});
 	//Check for bugs.mojang.com urls
 	urls = msg.content.match(urlRegex)
