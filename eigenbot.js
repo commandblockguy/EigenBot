@@ -50,6 +50,68 @@ client.on('message', msg => {
 			}
 		}});
 	}
+
+	//upcoming: Checks for fixes in unreleased snapshots
+	if(msg.content.startsWith(config.prefix + "upcoming")) {
+		project = "MC";
+
+		args = msg.content.split(' ');
+		if(args.length > 1) {
+			projects = /^(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)$/gi;
+			if(projects.test(args[1])) {
+				project = args[1].toUpperCase();
+			} else {
+				msg.channel.send("Invalid project ID.");
+			}
+		}
+
+		search = "project = " + project + " AND fixVersion in unreleasedVersions() ORDER BY resolved DESC";
+		jira.searchJira(search).then(function(results) {
+			if(!results.issues || !results.issues.length) {
+				msg.channel.send("No upcoming bugfixes were found.");
+				return;
+			}
+
+			function addLine(issues, response) {
+				// Get the next issue, if it exists
+				iter = issues.next();
+				if(iter.done) {
+					// Otherwise, send the final message
+					msg.channel.send(response).catch(function(error) {
+						console.log(error);
+						msg.channel.send("An error has occurred.");
+					});
+					return;
+				}
+				issue = iter.value;
+
+
+				// Add the key and title for each bug
+				line = "**" + issue.key + "**: *" + issue.fields.summary + "*\n";
+
+				// If this line would make the message too long, split into multiple messages
+				if(response.length + line.length >= 2000) {
+					msg.channel.send(response).then(function() {
+						addLine(issues, line);
+					}).catch(function(error) {
+						console.log(error);
+						msg.channel.send("An error has occurred.");
+					});
+				} else {
+					addLine(issues, response + line);
+				}
+			}
+
+			addLine(results.issues[Symbol.iterator](), "The following bugs will likely be fixed in the next snapshot: \n");
+
+		}).catch(function(error) {
+			msg.channel.send("An error has occurred.");
+			console.log("Error when processing upcoming command:");
+			console.log(error);
+		});
+		msg.channel.send("Searching for upcoming bugfixes, please wait...");
+	}
+
 	//mcstatus: Checks Mojang server status
 	if(msg.content.startsWith(config.prefix + "mcstatus")) {
 		//Request json object with the status of services
