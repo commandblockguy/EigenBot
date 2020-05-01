@@ -2,8 +2,12 @@ const request = require('request');
 const JiraApi = require('jira-client');
 
 let jira
-module.exports = (client, config) => {
-	client.on('message', onMessage.bind(client, config))
+let client, config
+
+module.exports = (_client, _config) => {
+  client = _client
+  config = _config
+	client.on('message', msg => onMessage.bind(msg))
 	jira = new JiraApi({
 		protocol: 'https',
 		host: config.host,
@@ -15,7 +19,7 @@ module.exports = (client, config) => {
 	});
 }
 
-function onMessage(config, msg) {
+function onMessage(msg) {
 	const escaped_prefix = config.prefix.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 	const regexPattern = new RegExp(escaped_prefix + '(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}', 'gi');
 	const urlRegex = /https?:\/\/bugs.mojang.com\/browse\/(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}/gi;
