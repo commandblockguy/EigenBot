@@ -7,7 +7,7 @@ let client, config
 module.exports = (_client, _config) => {
   client = _client
   config = _config
-	client.on('message', msg => onMessage.bind(msg))
+	client.on('message', msg => onMessage(msg))
 	jira = new JiraApi({
 		protocol: 'https',
 		host: config.host,
