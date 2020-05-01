@@ -1,31 +1,24 @@
-const config = require('./config.json');
-const escaped_prefix = config.prefix.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-const regexPattern = new RegExp(escaped_prefix + '(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}', 'gi');
-const urlRegex = /https?:\/\/bugs.mojang.com\/browse\/(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}/gi;
-
 const request = require('request');
+const JiraApi = require('jira-client');
 
-const Discord = require('discord.js');
-const client = new Discord.Client();
+let jira
+module.exports = (client, config) => {
+	client.on('message', onMessage.bind(client, config))
+	jira = new JiraApi({
+		protocol: 'https',
+		host: config.host,
+		port: 443,
+		username: config.user,
+		password: config.password,
+		apiVersion: '2',
+		strictSSL: true
+	});
+}
 
-JiraApi = require('jira-client');
-var jira = new JiraApi({
-	protocol: 'https',
-	host: config.host,
-	port: 443,
-	username: config.user,
-	password: config.password,
-	apiVersion: '2',
-	strictSSL: true
-});
-
-client.on('ready', () => {
-	console.log(`Logged in as ${client.user.tag}!`);
-	//Set the presence for the bot (Listening to !help)
-	client.user.setPresence({ status: 'online', game: { name: config.prefix + "help", type: 2} });
-});
-
-client.on('message', msg => {
+function onMessage(config, msg) {
+	const escaped_prefix = config.prefix.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+	const regexPattern = new RegExp(escaped_prefix + '(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}', 'gi');
+	const urlRegex = /https?:\/\/bugs.mojang.com\/browse\/(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}/gi;
 	//We don't want our bot to react to other bots or itself
 	if(msg.author.bot) {
 		return;
@@ -167,7 +160,7 @@ client.on('message', msg => {
 			});
 		});
 	}
-});
+}
 
 //Send info about the bug in the form of an embed to the Discord channel
 function sendEmbed(channel, issue) {
@@ -201,6 +194,3 @@ function sendEmbed(channel, issue) {
 	}};
 	channel.send(msg);
 };
-
-//Login with token
-client.login(config.token);

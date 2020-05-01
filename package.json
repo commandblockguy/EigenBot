@@ -1,17 +1,18 @@
 {
   "name": "eigenbot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Bot for the EigenCraft Discord server.",
-  "main": "eigenbot.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "commandblockguy",
+  "author": ["commandblockguy", "skyrising"],
   "repository": "https://github.com/commandblockguy/EigenBot",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
-    "discord.js": "^11.5.1",
+    "discord.js": "^12.2.0",
     "jira-client": "^6.11.0",
-    "request": "^2.88.0"
+    "request": "^2.88.2",
+    "request-promise-native": "^1.0.8"
   }
 }
