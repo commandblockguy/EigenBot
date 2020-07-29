@@ -15,5 +15,8 @@
         "Postponed": 16765777,
         "Invalid": 9441545, //For Invalid, Duplicate, Incomplete, and Cannot Reproduce resolutions
         "Working": 16777215 //For Won't Fix and Works as Intended resolutions
+    },
+    "minecraft-version": {
+      "webhook": "<url>"
     }
 }

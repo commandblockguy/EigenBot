@@ -15,7 +15,9 @@ client.on('ready', () => {
   })
 })
 
-require('./eigenbot')(client, config)
+for (const module of ['eigenbot', 'minecraft-version']) {
+	require('./' + module)(client, config)
+}
 
 //Login with token
 client.login(config.token)
