@@ -17,6 +17,7 @@
         "Working": 16777215 //For Won't Fix and Works as Intended resolutions
     },
     "minecraft-version": {
+      "channels": ["<channel-id>"],
       "webhook": "<url>"
     }
 }

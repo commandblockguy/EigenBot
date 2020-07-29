@@ -1,11 +1,12 @@
 const request = require('request-promise-native')
 
-let config
+let client, config
 
 module.exports = (_client, _config) => {
+  client = _client
   config = _config['minecraft-version']
   if (!config) return
-  if (config.webhook) {
+  if (config.webhook || config.channels) {
     const state = {}
     setInterval(poll.bind(state), (config.interval || 10) * 1000)
   }
@@ -21,7 +22,7 @@ async function poll() {
       this.latestDate = latestDate
 
       // TESTING
-      //update(data.versions.find(v => v.id === data.latest.snapshot), true)
+      update(data.versions.find(v => v.id === data.latest.snapshot), false)
       return
     }
     if (latestDate < this.latestDate) return
@@ -73,5 +74,11 @@ async function update (version, test) {
     console.log(embeds)
     return
   }
-  await request.post(config.webhook, {json: {embeds}})
+  if (config.webhook) await request.post(config.webhook, {json: {embeds}})
+  if (config.channels) {
+    for (const id of config.channels) {
+      const channel = await client.channels.fetch(id)
+      await channel.send({embed: embeds[0]})
+    }
+  }
 }
