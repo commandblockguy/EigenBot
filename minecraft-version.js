@@ -22,7 +22,7 @@ async function poll() {
       this.latestDate = latestDate
 
       // TESTING
-      update(data.versions.find(v => v.id === data.latest.snapshot), false)
+      // update(data.versions.find(v => v.id === data.latest.snapshot), false)
       return
     }
     if (latestDate < this.latestDate) return
