@@ -1,22 +1,12 @@
 const request = require('request');
-const JiraApi = require('jira-client');
 
-let jira
-let client, config
+let jira, client, config
 
-module.exports = (_client, _config) => {
+module.exports = (_client, _config, _jira) => {
   client = _client
   config = _config
+  jira = _jira
 	client.on('message', msg => onMessage(msg))
-	jira = new JiraApi({
-		protocol: 'https',
-		host: config.host,
-		port: 443,
-		username: config.user,
-		password: config.password,
-		apiVersion: '2',
-		strictSSL: true
-	});
 }
 
 function onMessage(msg) {

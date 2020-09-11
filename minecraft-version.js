@@ -52,15 +52,12 @@ async function update (version, test) {
     'Version JSON': `[${version.id}.json](${version.url})`,
     Assets: `[${details.assetIndex.id}](${details.assetIndex.url})`
   }
-  const articleUrl = 'https://minecraft.net/en-us/article/minecraft-' + (version.type === 'snapshot' ? 'snapshot-' + version.id.slice(0, -1) + 'a' : version.id)
+  let thumbnail
   try {
-    const html = await request(articleUrl)
-    const match = html.match(/<p class="lead(?: text-center)?">([^<]*?)<\/p>/)
-    if (match) {
-      const subtitle = match[1].trim()
-      fields.Changelog = `[${subtitle}](${articleUrl})`
-    } else {
-      fields.Changelog = `[minecraft.net](${articleUrl})`
+    const {url, image, subtitle} = await getArticle(version)
+    if (url) {
+      fields.Changelog = `[${subtitle || 'minecraft.net'}](${url})`
+      thumbnail = {url: image}
     }
   } catch (e) {}
   const jars = `[Server JAR](${details.downloads.server.url}) (${fancySize(details.downloads.server.size)}) - [Client JAR](${details.downloads.client.url}) (${fancySize(details.downloads.client.size)})`
@@ -68,7 +65,8 @@ async function update (version, test) {
     title: `Minecraft ${version.id}`,
     url: version.url,
     description: Object.keys(fields).map(k => `**${k}**: ${fields[k]}`).join('\n') + '\n\n' + jars,
-    timestamp: version.releaseTime
+    timestamp: version.releaseTime,
+    thumbnail
   }]
   if (test) {
     console.log(embeds)
@@ -81,4 +79,27 @@ async function update (version, test) {
       await channel.send({embed: embeds[0]})
     }
   }
+}
+
+async function getArticle(version) {
+  const articles = await request('https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid?tagsPath=minecraft:article/news,minecraft:stockholm/news', { json: true })
+  const candidates = articles.article_grid.filter(article => {
+    const title = article.default_tile.title
+    if (!title.startsWith('Minecraft ') || title.startsWith('Minecraft Dungeons')) return false
+    if (title.includes(version.id)) return true
+    if (version.type !== 'snapshot') return false
+    const snapshot = version.id.match(/^(\d{2}w\d{2})([a-z])$/)
+    if (snapshot) return title.includes(snapshot[1])
+    const match = version.id.match(/^(\d+\.\d+(?:\.\d+)?)(-(rc|pre)(\d+)$)?/)
+    if (!match) return false
+    switch (match[3]) {
+      case 'rc': return title.includes(match[1] + ' Release Candidate')
+      case 'pre': return title.includes(match[1] + ' Pre-Release')
+      default: return title.includes(version.id)
+    }
+  })
+  const article = candidates[0]
+  if (!article) return {}
+  const tile = article.default_tile
+  return {url: 'https://minecraft.net' + article.article_url, title: tile.title, subtitle: tile.sub_header, image: 'https://minecraft.net' + tile.image.imageURL}
 }

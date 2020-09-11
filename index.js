@@ -1,5 +1,6 @@
 const config = require('./config.json');
 
+const JiraApi = require('jira-client');
 const Discord = require('discord.js');
 const client = new Discord.Client();
 
@@ -15,8 +16,19 @@ client.on('ready', () => {
   })
 })
 
+
+const jira = new JiraApi({
+	protocol: 'https',
+	host: config.host,
+	port: 443,
+	username: config.user,
+	password: config.password,
+	apiVersion: '2',
+	strictSSL: true
+});
+
 for (const module of ['eigenbot', 'minecraft-version']) {
-	require('./' + module)(client, config)
+	require('./' + module)(client, config, jira)
 }
 
 //Login with token
