@@ -82,10 +82,10 @@ async function update (version, test) {
 }
 
 async function getArticle(version) {
-  const articles = await request('https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid?tagsPath=minecraft:article/news,minecraft:stockholm/news', { json: true })
+  const articles = await request('https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid', { json: true })
   const candidates = articles.article_grid.filter(article => {
     const title = article.default_tile.title
-    if (!title.startsWith('Minecraft ') || title.startsWith('Minecraft Dungeons')) return false
+    if (!title.startsWith('Minecraft ') || title.startsWith('Minecraft Dungeons') || article.default_tile.sub_header.includes('Bedrock Beta')) return false
     if (title.includes(version.id)) return true
     if (version.type !== 'snapshot') return false
     const snapshot = version.id.match(/^(\d{2}w\d{2})([a-z])$/)
