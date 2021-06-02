@@ -1,10 +1,8 @@
-'use strict'
-
-const request = require('request')
+import request from 'request'
 
 let jira, client, config
 
-module.exports = (_client, _config, _jira) => {
+export default (_client, _config, _jira) => {
   client = _client
   config = _config
   jira = _jira

@@ -1,8 +1,8 @@
-const request = require('request-promise-native')
+import request from 'request-promise-native'
 
 let client, config
 
-module.exports = (_client, _config) => {
+export default (_client, _config) => {
   client = _client
   config = _config['minecraft-version']
   if (!config) return

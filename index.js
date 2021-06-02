@@ -1,8 +1,9 @@
-const config = require('./config.json')
+import fs from 'fs'
+import JiraApi from 'jira-client'
+import { Client } from 'discord.js'
 
-const JiraApi = require('jira-client')
-const Discord = require('discord.js')
-const client = new Discord.Client()
+const config = JSON.parse(fs.readFileSync('./config.json'))
+const client = new Client()
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`)
@@ -27,7 +28,7 @@ const jira = new JiraApi({
 })
 
 for (const module of ['eigenbot', 'minecraft-version']) {
-  require('./' + module)(client, config, jira)
+  import('./' + module + '.js').then(m => m.default(client, config, jira))
 }
 
 // Login with token
