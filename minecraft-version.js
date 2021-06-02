@@ -12,7 +12,7 @@ module.exports = (_client, _config) => {
   }
 }
 
-async function poll() {
+async function poll () {
   try {
     const data = await request('https://launchermeta.mojang.com/mc/game/version_manifest.json', { json: true })
     const latestDate = data.versions.map(v => Date.parse(v.time)).reduce((a, b) => a > b ? a : b)
@@ -81,7 +81,7 @@ async function update (version, test) {
   }
 }
 
-async function getArticle(version) {
+async function getArticle (version) {
   const articles = await request('https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid', { json: true })
   const candidates = articles.article_grid.filter(article => {
     const title = article.default_tile.title
