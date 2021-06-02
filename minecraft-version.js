@@ -49,24 +49,30 @@ async function update (version, test) {
   const details = await request(version.url, { json: true })
   const fields = {
     Type: version.type[0].toUpperCase() + version.type.slice(1),
+    Id: version.id,
     'Version JSON': `[${version.id}.json](${version.url})`,
     Assets: `[${details.assetIndex.id}](${details.assetIndex.url})`
   }
-  let thumbnail
+  let embedImage, embedThumbnail
   try {
     const {url, image, subtitle} = await getArticle(version)
     if (url) {
       fields.Changelog = `[${subtitle || 'minecraft.net'}](${url})`
-      thumbnail = {url: image}
+      if (image.endsWith('-header.jpg')) {
+        embedImage = {url: image}
+      } else {
+        embedThumbnail = {url: image}
+      }
     }
   } catch (e) {}
   const jars = `[Server JAR](${details.downloads.server.url}) (${fancySize(details.downloads.server.size)}) - [Client JAR](${details.downloads.client.url}) (${fancySize(details.downloads.client.size)})`
   const embeds = [{
-    title: `Minecraft ${version.id}`,
+    title: `Minecraft ${getFullVersionName(version)}`,
     url: version.url,
     description: Object.keys(fields).map(k => `**${k}**: ${fields[k]}`).join('\n') + '\n\n' + jars,
     timestamp: version.releaseTime,
-    thumbnail
+    image: embedImage,
+    thumbnail: embedThumbnail
   }]
   if (test) {
     console.log(embeds)
@@ -79,6 +85,15 @@ async function update (version, test) {
       await channel.send({embed: embeds[0]})
     }
   }
+}
+
+function getFullVersionName(version) {
+  const match = version.id.match(/^(\d+\.\d+(?:\.\d+)?)(-(rc|pre)(\d+)$)?/)
+  switch (match[3]) {
+    case 'rc': return match[1] + ' Release Candidate ' + match[4]
+    case 'pre': return match[1] + ' Pre-Release ' + match[4]
+  }
+  return version.type[0].toUpperCase() + version.type.slice(1) + ' ' + version.id
 }
 
 async function getArticle (version) {
@@ -101,5 +116,13 @@ async function getArticle (version) {
   const article = candidates[0]
   if (!article) return {}
   const tile = article.default_tile
-  return {url: 'https://minecraft.net' + article.article_url, title: tile.title, subtitle: tile.sub_header, image: 'https://minecraft.net' + tile.image.imageURL}
+  let imageURL = 'https://minecraft.net' + tile.image.imageURL
+  const headerImageURL = imageURL.replace('1x1', 'header')
+  if (headerImageURL !== imageURL) {
+    try {
+      await request.head(headerImageURL)
+      imageURL = headerImageURL
+    } catch (e) {}
+  }
+  return {url: 'https://minecraft.net' + article.article_url, title: tile.title, subtitle: tile.sub_header, image: imageURL}
 }
