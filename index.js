@@ -1,9 +1,9 @@
 import fs from 'fs'
 import JiraApi from 'jira-client'
-import { Client } from 'discord.js'
+import discord from 'discord.js'
 
 const config = JSON.parse(fs.readFileSync('./config.json'))
-const client = new Client()
+const client = new discord.Client()
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`)
