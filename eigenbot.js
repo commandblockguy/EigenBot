@@ -121,7 +121,7 @@ function sendUpcoming (msg) {
       const issue = iter.value
 
       // Add the key and title for each bug
-      const line = '**' + issue.key + '**: *' + issue.fields.summary + '*\n'
+      const line = '**' + issue.key + '**: *' + issue.fields.summary.trim() + '*\n'
 
       // If this line would make the message too long, split into multiple messages
       if (response.length + line.length >= 2000) {
