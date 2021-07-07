@@ -88,7 +88,7 @@ async function update (version) {
 async function getUpdateEmbed (version) {
   const details = await (await fetch(version.url)).json()
   const fields = {
-    Type: version.type[0].toUpperCase() + version.type.slice(1),
+    Type: version.type.includes('_') ? version.type.replace(/_/g, '-') : version.type[0].toUpperCase() + version.type.slice(1),
     Id: version.id,
     'Version JSON': `[${version.id}.json](${version.url})`,
     Assets: `[${details.assetIndex.id}](${details.assetIndex.url})`
@@ -100,6 +100,10 @@ async function getUpdateEmbed (version) {
     extraDescription = description
     if (url) {
       fields.Changelog = `[${subtitle || 'minecraft.net'}](${url})`
+    } else {
+      fields.Changelog = `[quiltmc.org](https://quiltmc.org/mc-patchnotes/#${version.id})`
+    }
+    if (image) {
       if (image.endsWith('-header.jpg')) {
         embedImage = {url: image}
       } else {
@@ -109,7 +113,10 @@ async function getUpdateEmbed (version) {
   } catch (e) {
     console.error(e)
   }
-  const jars = `[Server JAR](${details.downloads.server.url}) (${fancySize(details.downloads.server.size)}) - [Client JAR](${details.downloads.client.url}) (${fancySize(details.downloads.client.size)})`
+  const jars = [
+    details.downloads.server && `[Server JAR](${details.downloads.server.url}) (${fancySize(details.downloads.server.size)})`,
+    details.downloads.client && `[Client JAR](${details.downloads.client.url}) (${fancySize(details.downloads.client.size)})`
+  ].filter(Boolean).join(' - ')
   const description = [
     Object.keys(fields).map(k => `**${k}**: ${fields[k]}`).join('\n'),
     extraDescription,
@@ -134,7 +141,7 @@ function getFullVersionName(version) {
       case 'pre': return match[1] + ' Pre-Release ' + match[4]
     }
   }
-  return version.type[0].toUpperCase() + version.type.slice(1) + ' ' + version.id
+  return version.type.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ') + ' ' + version.id
 }
 
 const USER_AGENT = 'Mozilla/5.0 (Linux) Gecko'
@@ -206,6 +213,7 @@ async function getArticle (version) {
     getArticleInfo(version),
     getPatchNotesInfo(version)
   ])).map(r => r.value || {})
+  console.log(infos)
   return {...infos[0], ...infos[1]}
 }
 
