@@ -1,6 +1,6 @@
 import request from 'request-promise-native'
 import fetch from 'node-fetch'
-import {decode} from 'html-entities'
+import html from 'html-entities'
 
 let client, config
 
@@ -141,7 +141,7 @@ const USER_AGENT = 'Mozilla/5.0 (Linux) Gecko'
 
 async function getPatchNotes() {
   try {
-    return await (await fetch('https://launchercontent.mojang.com/javaPatchNotes.json', {timeout: 5000})).json()
+    return await (await fetch('https://launchercontent.mojang.com/javaPatchNotes.json', {timeout: 2000})).json()
   } catch (e) {
     console.error(e)
     return {version: 1, entries: []}
@@ -159,14 +159,14 @@ async function getPatchNotesInfo(version) {
   }
   const match = patchNotes.body.match(/^<p>(.*?)<\/p>/)
   if (match) {
-    info.description = decode(match[1])
+    info.description = html.decode(match[1])
   }
   return info
 }
 
 async function getArticleGrid() {
   try {
-    return await (await fetch('https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid', {timeout: 5000, headers: {'User-Agent': USER_AGENT}})).json()
+    return await (await fetch('https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid', {timeout: 2000, headers: {'User-Agent': USER_AGENT}})).json()
   } catch (e) {
     console.error(e)
     return {article_grid: [], article_count: 0}
