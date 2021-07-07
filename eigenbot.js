@@ -1,4 +1,4 @@
-import request from 'request'
+import fetch from 'node-fetch'
 
 let jira, client, config
 
@@ -150,31 +150,35 @@ function sendUpcoming (msg) {
   }, 500)
 }
 
-function sendStatus (channel) {
+async function sendStatus (channel) {
   // Request json object with the status of services
-  request('https://status.mojang.com/check', (error, response, body) => {
-    // We really should never get this. If you are getting this, please verify that Mojang still exists.
-    if (error) {
-      channel.send("Unable to reach Mojang API for status check. Let's assume everything went wrong.")
-      return
+  try {
+    const res = await fetch('https://status.mojang.com/check')
+    const statuses = await res.json()
+    const colors = {
+      red: 0xff0000,
+      yellow: 0x00ffff,
+      green: 0x00ff00
     }
-    // Gives a list of objects with a single key-value pair consisting of the service name as the key and status as a color green, yellow, or red as the value
-    const statuses = JSON.parse(body)
-    if (statuses.every(function (service) {
-      // Get service name
+    let color = colors.green
+    const embed = {
+      title: 'Mojang Service Status',
+      fields: []
+    }
+    for (const service of statuses) {
       const name = Object.keys(service)[0]
-      if (service[name] === 'green') {
-        // Service is healthy
-        return true
-      } else {
-        channel.send('Service ' + name + ' has status ' + service[name])
-        return false
-      }
-    })) {
-      // Run only
-      channel.send('All services are working normally.')
+      embed.fields.push({
+        name, value: `:${service[name]}_square: ${service[name]}`, inline: true
+      })
+      color = Math.max(color, colors[service[name]])
     }
-  })
+    while (embed.fields.length % 3 !== 0) embed.fields.push({name: '\u200b', value: '\u200b', inline: true})
+    embed.color = color
+    await channel.send({embed})
+  } catch (e) {
+    channel.send('Could not get status from Mojang API')
+    console.error(e)
+  }
 }
 
 // Send info about the bug in the form of an embed to the Discord channel
