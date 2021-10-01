@@ -1,4 +1,8 @@
 import fetch from 'node-fetch'
+import {replyNoMention, editNoMention} from './utils.js'
+import {SlashCommandBuilder} from '@discordjs/builders'
+
+const PROJECTS = ['MC', 'MCAPI', 'MCCE', 'MCD', 'MCL', 'MCPE', 'REALMS', 'BDS', 'WEB']
 
 let jira, client, config
 
@@ -6,32 +10,68 @@ export default (_client, _config, _jira) => {
   client = _client
   config = _config
   jira = _jira
-  client.on('message', msg => onMessage(msg))
+  client.on('messageCreate', onMessage)
+  client.on('interactionCreate', onInteraction)
+  return [
+    new SlashCommandBuilder().setName('upcoming').setDescription('Shows bugs that are likely fixed in the next snapshot')
+      .addStringOption(option => option.setName('project').setDescription('The project to search in, for example "MC"')),
+    new SlashCommandBuilder().setName('mcstatus').setDescription('Checks Mojang server status'),
+    new SlashCommandBuilder().setName('bug').setDescription('Shows information for a bug')
+      .addStringOption(option => option.setName('id').setDescription('The bug id (for example MC-88959)'))
+  ]
 }
+
+function onInteraction(interaction) {
+  if (!interaction.isCommand()) return
+  switch(interaction.commandName) {
+    case 'upcoming': return sendUpcoming(interaction, interaction.options.getString('project'))
+    case 'mcstatus': return sendStatus(interaction)
+    case 'bug': {
+      const key = interaction.options.getString('id')
+      const dash = key.indexOf('-')
+      const bugNumber = key.substr(dash + 1)
+      if (dash < 0 || parseInt(bugNumber).toString() !== bugNumber) {
+        replyNoMention(interaction, 'Invalid issue id')
+        return
+      }
+      if (!PROJECTS.includes(key.substr(0, dash))) {
+        replyNoMention(interaction, 'Unknown project')
+        return
+      }
+      return respondWithIssue(interaction, key)
+    }
+  }
+}
+
 
 function onMessage (msg) {
   const escapedPrefix = config.prefix.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
-  const regexPattern = new RegExp(escapedPrefix + '(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}', 'gi')
-  const urlRegex = /https?:\/\/bugs.mojang.com\/browse\/(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)-[0-9]{1,7}/gi
+  const regexPattern = new RegExp(escapedPrefix + '(' + PROJECTS.join('|') + ')-[0-9]{1,7}', 'gi')
+  const urlRegex = new RegExp('https?:\/\/bugs.mojang.com\/browse\/(' + PROJECTS.join('|') + ')-[0-9]{1,7}', 'gi')
   // We don't want our bot to react to other bots or itself
   if (msg.author.bot) {
     return
   }
   // help: Gives usage information
   if (msg.content.startsWith(config.prefix + 'help')) {
-    sendHelp(msg.channel)
+    sendHelp(msg)
     return
   }
 
   // upcoming: Checks for fixes in unreleased snapshots
   if (msg.content.startsWith(config.prefix + 'upcoming')) {
-    sendUpcoming(msg)
+    let project = 'MC'
+    const args = msg.content.split(' ')
+    if (args.length > 1) {
+      project = args[1].toUpperCase()
+    }
+    sendUpcoming(msg, project)
     return
   }
 
   // mcstatus: Checks Mojang server status
   if (msg.content.startsWith(config.prefix + 'mcstatus')) {
-    sendStatus(msg.channel)
+    sendStatus(msg)
     return
   }
   let matches = []
@@ -45,35 +85,36 @@ function onMessage (msg) {
       return url.split('/')[4]
     }))
   }
-  matches = matches.filter(function (elem, index, self) { return self.indexOf(elem) === index })
-  if (matches.length) {
-    // Get a list of issues by issue key
-    matches.forEach(function (issueKey, index) {
-      jira.findIssue(issueKey).then(function (issue) {
-        // Send info about the bug in the form of an embed to the Discord channel
-        sendEmbed(msg.channel, issue)
-      }).catch(function (error) {
-        if (error && error.error && error.error.errorMessages && error.error.errorMessages.includes('Issue Does Not Exist')) {
-          msg.channel.send('No issue was found for ' + issueKey + '.')
-        } else {
-          msg.channel.send('An unknown error has occurred.')
-          console.log(error)
-        }
-      })
-    })
+  for (const issueKey of new Set(matches)) {
+    respondWithIssue(msg, issueKey)
   }
 }
 
-function sendHelp (channel) {
-  channel.send({embed: {
-    title: config.prefix + 'help',
+function respondWithIssue(msg, issueKey) {
+  jira.findIssue(issueKey).then(issue =>{
+    // Send info about the bug in the form of an embed to the Discord channel
+    sendEmbed(msg, issue)
+  }).catch(error => {
+    if (error && error.error && error.error.errorMessages && error.error.errorMessages.includes('Issue Does Not Exist')) {
+      replyNoMention(msg, 'No issue was found for ' + issueKey + '.')
+    } else {
+      replyNoMention(msg, 'An unknown error has occurred.')
+      console.log(error)
+    }
+  })
+}
+
+function sendHelp (interaction) {
+  replyNoMention(interaction, {embeds: [{
+    title: config.name + ' help',
     description: 'I listen for Minecraft bug report links or ' + config.prefix + 'PROJECT-NUMBER\n' +
            'For example, saying https://bugs.mojang.com/browse/MC-81098 or ' + config.prefix + 'MC-81098 will give quick info on those bugs',
     fields: [
       {
         name: 'Other commands: ',
         value: '**' + config.prefix + 'help:** Shows this help screen.\n' +
-             '**' + config.prefix + 'mcstatus:** Checks Mojang server status.'
+             '**' + config.prefix + 'mcstatus:** Checks Mojang server status.\n' +
+             '**' + config.prefix + 'upcoming:** Shows bugs that are likely fixed in the next snapshot.'
       }
     ],
     url: config.url,
@@ -81,78 +122,67 @@ function sendHelp (channel) {
     footer: {
       text: config.name
     }
-  }})
+  }]})
 }
 
-function sendUpcoming (msg) {
-  let project = 'MC'
-
-  const args = msg.content.split(' ')
-  if (args.length > 1) {
-    const projects = /^(mc|mcapi|mcce|mcds|mcl|mcpe|realms|sc|web)$/gi
-    if (projects.test(args[1])) {
-      project = args[1].toUpperCase()
-    } else {
-      msg.channel.send('Invalid project ID.')
-    }
+async function sendUpcoming (interaction, project) {
+  project = project ? project.toUpperCase() : 'MC'
+  if (!PROJECTS.includes(project)) {
+    replyNoMention(interaction, 'Invalid project ID.')
+    return
   }
 
+  let sendNext = replyNoMention.bind(null, interaction)
   let done = false
+  if (interaction.deferReply) {
+    await interaction.deferReply()
+  } else {
+    setTimeout(async () => {
+      if (!done) {
+        const msg = await replyNoMention(interaction, 'Searching for upcoming bugfixes, please wait...')
+        sendNext = editNoMention.bind(null, msg)
+      }
+    }, 500)
+  }
+  
   const search = 'project = ' + project + ' AND fixVersion in unreleasedVersions() ORDER BY resolved DESC'
-  jira.searchJira(search).then(function (results) {
-    if (!results.issues || !results.issues.length) {
-      msg.channel.send('No upcoming bugfixes were found.')
-      done = true
-      return
-    }
-
-    function addLine (issues, response) {
-      // Get the next issue, if it exists
-      const iter = issues.next()
-      if (iter.done) {
-        // Otherwise, send the final message
-        msg.channel.send(response).catch(function (error) {
-          console.log(error)
-          msg.channel.send('An error has occurred.')
-        })
-        done = true
-        return
-      }
-      const issue = iter.value
-
-      // Add the key and title for each bug
-      const line = '**' + issue.key + '**: *' + issue.fields.summary.trim() + '*\n'
-
-      // If this line would make the message too long, split into multiple messages
-      if (response.length + line.length >= 2000) {
-        msg.channel.send(response).then(function () {
-          addLine(issues, line)
-        }).catch(function (error) {
-          console.log(error)
-          msg.channel.send('An error has occurred.')
-        })
-      } else {
-        addLine(issues, response + line)
-      }
-    }
-
-    addLine(results.issues[Symbol.iterator](), 'The following bugs will likely be fixed in the next snapshot: \n')
+  jira.searchJira(search).then(async function (results) {
     done = true
+    if (!results.issues || !results.issues.length) { 
+      return replyNoMention(interaction, 'No upcoming bugfixes were found.')
+    }
+
+    let messageContent = 'The following bugs will likely be fixed in the next snapshot:'
+
+    async function addLine(line) {
+      const newContent = line !== null ? messageContent + '\n' + line : messageContent
+      if (newContent.length >= 2000 || line === null) {
+        const msg = await sendNext(messageContent)
+        sendNext = interaction.followUp ? interaction.followUp.bind(interaction) : msg.reply.bind(msg)
+        messageContent = line || ''
+      } else {
+        messageContent = newContent
+      }
+    }
+
+    for (const issue of results.issues) {
+      await addLine('**' + issue.key + '**: *' + issue.fields.summary.trim() + '*')
+    }
+    await addLine(null)
   }).catch(function (error) {
-    msg.channel.send('An error has occurred.')
+    done = true
+    replyNoMention(interaction, 'An error has occurred.')
     console.log('Error when processing upcoming command:')
     console.log(error)
-    done = true
   })
-
-  setTimeout(() => {
-    if (!done) msg.channel.send('Searching for upcoming bugfixes, please wait...')
-  }, 500)
 }
 
-async function sendStatus (channel) {
+async function sendStatus (interaction) {
   // Request json object with the status of services
   try {
+    if (interaction.deferReply) {
+      await interaction.deferReply()
+    }
     const res = await fetch('https://status.mojang.com/check')
     const statuses = await res.json()
     const colors = {
@@ -174,15 +204,19 @@ async function sendStatus (channel) {
     }
     while (embed.fields.length % 3 !== 0) embed.fields.push({name: '\u200b', value: '\u200b', inline: true})
     embed.color = color
-    await channel.send({embed})
+    await replyNoMention(interaction, {embeds: [embed]})
   } catch (e) {
-    channel.send('Could not get status from Mojang API')
     console.error(e)
+    try {
+      await replyNoMention(interaction, 'Could not get status from Mojang API')
+    } catch (e2) {
+      console.error(e2)
+    }
   }
 }
 
 // Send info about the bug in the form of an embed to the Discord channel
-function sendEmbed (channel, issue) {
+function sendEmbed (interaction, issue) {
   let descriptionString = '**Status:** ' + issue.fields.status.name
   if (!issue.fields.resolution) {
     // For unresolved issues
@@ -200,8 +234,7 @@ function sendEmbed (channel, issue) {
   } else if (issue.fields.resolution && ["Won't Fix", 'Works As Intended'].includes(issue.fields.resolution.name)) {
     color = config.colors['Working']
   }
-  // Create the embed
-  const msg = {embed: {
+  replyNoMention(interaction, {embeds: [{
     title: issue.key + ': ' + issue.fields.summary,
     url: 'https://bugs.mojang.com/browse/' + issue.key,
     description: descriptionString,
@@ -210,6 +243,5 @@ function sendEmbed (channel, issue) {
     footer: {
       text: 'Created'
     }
-  }}
-  channel.send(msg)
+  }]})
 }

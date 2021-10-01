@@ -14,7 +14,10 @@
   "repository": "https://github.com/commandblockguy/EigenBot",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^12.2.0",
+    "@discordjs/builders": "^0.6.0",
+    "@discordjs/rest": "^0.1.0-canary.0",
+    "discord-api-types": "^0.23.1",
+    "discord.js": "^13.1.0",
     "html-entities": "^2.3.2",
     "jira-client": "^6.11.0",
     "node-fetch": "^2.6.1",

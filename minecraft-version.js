@@ -1,6 +1,8 @@
 import request from 'request-promise-native'
 import fetch from 'node-fetch'
 import html from 'html-entities'
+import {SlashCommandBuilder} from '@discordjs/builders'
+import {replyNoMention} from './utils.js'
 
 let client, config
 
@@ -13,33 +15,46 @@ export default async (_client, _config) => {
   if (config.webhook || config.channels) {
     setInterval(poll.bind(state), (config.interval || 10) * 1000)
   }
-  client.on('message', async message => {
+  async function handleVersionCommand(interaction, versionArg) {
+    let type = 'snapshot'
+    let id
+    if (versionArg) {
+      if (Object.keys(state.data.latest).includes(versionArg)) {
+        type = versionArg
+      } else {
+        id = versionArg
+      }
+    }
+    if (!id) id = state.data.latest[type]
+    const version = state.data.versions.find(v => v.id === id)
+    if (version) {
+      const embed = await getUpdateEmbed(version)
+      await replyNoMention(interaction, {embeds: [embed]})
+    } else {
+      await replyNoMention(interaction, `Unknown version '${id || type}'`)
+    }
+  }
+  client.on('messageCreate', async message => {
     if (message.author.bot) return
     try {
       if (message.content.startsWith('!mcversion')) {
-        const rest = message.content.substr(10).trim()
-        let type = 'snapshot'
-        let id
-        if (rest) {
-          if (Object.keys(state.data.latest).includes(rest)) {
-            type = rest
-          } else {
-            id = rest
-          }
-        }
-        if (!id) id = state.data.latest[type]
-        const version = state.data.versions.find(v => v.id === id)
-        if (version) {
-          const embed = await getUpdateEmbed(version)
-          await message.channel.send({embed})
-        } else {
-          await message.channel.send(`Unknown version '${id || type}'`)
-        }
+        await handleVersionCommand(message, message.content.substr(10).trim())
       }
     } catch (e) {
       console.error(e)
     }
   })
+  client.on('interactionCreate', async interaction => {
+    if (!interaction.isCommand() || interaction.commandName !== 'mcversion') return
+    await interaction.deferReply()
+    await handleVersionCommand(interaction, interaction.options.getString('version'))
+  })
+  return [
+    new SlashCommandBuilder()
+      .setName('mcversion')
+      .setDescription('Shows information about Minecraft versions')
+      .addStringOption(option => option.setName('version').setDescription('A specific version'))
+  ]
 }
 
 async function poll () {

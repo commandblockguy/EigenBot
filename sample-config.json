@@ -1,5 +1,6 @@
 {
     "token": "", //This is the bot token
+    "guild": "", //The guild for slash commands (leave empty or remove for global commands)
     "host": "bugs.mojang.com", //You shouldn't need to change this
     "user": "", //This is your JIRA username
     "password": "", //Password for the same account
