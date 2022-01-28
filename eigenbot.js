@@ -97,8 +97,15 @@ function respondWithIssue(msg, issueKey) {
     // Send info about the bug in the form of an embed to the Discord channel
     sendEmbed(msg, issue)
   }).catch(error => {
-    if (error && error.error && error.error.errorMessages && error.error.errorMessages.includes('Issue Does Not Exist')) {
-      replyNoMention(msg, 'No issue was found for ' + issueKey + '.')
+    if (error && error.error && error.error.errorMessages) {
+      if (error.error.errorMessages.includes('Issue Does Not Exist')) {
+        replyNoMention(msg, 'No issue was found for ' + issueKey + '.')
+      }  else if (error.error.errorMessages.includes('You do not have the permission to see the specified issue.')) {
+        replyNoMention(msg,'Issue ' + issueKey + ' is private and you don\'t have permission to see it.');
+      } else {
+        replyNoMention(msg, 'An unknown error has occurred.')
+        console.log(error)
+      }
     } else {
       replyNoMention(msg, 'An unknown error has occurred.')
       console.log(error)
