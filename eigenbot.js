@@ -85,8 +85,10 @@ function onMessage (msg) {
       return url.split('/')[4]
     }))
   }
-  for (const issueKey of new Set(matches)) {
-    respondWithIssue(msg, issueKey)
+  if (matches.length <= 5) {
+    for (const issueKey of new Set(matches)) {
+      respondWithIssue(msg, issueKey)
+    }
   }
 }
 
