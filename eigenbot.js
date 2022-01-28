@@ -99,7 +99,7 @@ function respondWithIssue(msg, issueKey) {
       if (error.error.errorMessages.includes('Issue Does Not Exist')) {
         replyNoMention(msg, 'No issue was found for ' + issueKey + '.')
       }  else if (error.error.errorMessages.includes('You do not have the permission to see the specified issue.')) {
-        callback('Issue ' + issueKey + ' is private and you don\'t have permission to see it.');
+        replyNoMention(msg,'Issue ' + issueKey + ' is private and you don\'t have permission to see it.');
       } else {
         replyNoMention(msg, 'An unknown error has occurred.')
         console.log(error)
